@@ -111,6 +111,7 @@ export default function App() {
   const peerRef = useRef<any>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     const socket = io(SERVER_URL);
@@ -149,7 +150,9 @@ export default function App() {
   const startCall = useCallback(async (initiator: boolean) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      streamRef.current = stream;
       setLocalStream(stream);
+      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       const Peer = (await import("simple-peer")).default;
       const peer = new Peer({ initiator, trickle: false, stream });
       peer.on("signal", (data) => socketRef.current?.emit("signal", { data }));
@@ -164,31 +167,39 @@ export default function App() {
     }
   }, []);
 
+  const stopMedia = useCallback(() => {
+    const s = streamRef.current;
+    if (s) { s.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
+    setLocalStream(null);
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+  }, []);
+
   const findPartner = useCallback(() => {
     cleanupPeer();
-    if (localStream) { localStream.getTracks().forEach((t) => t.stop()); setLocalStream(null); }
+    stopMedia();
     setChatMessages([]);
     setChatOpen(false);
     socketRef.current?.emit("find-partner");
     setPhase("waiting");
-  }, [cleanupPeer, localStream]);
+  }, [cleanupPeer, stopMedia]);
 
   const nextPartner = useCallback(() => {
-    if (localStream) { localStream.getTracks().forEach((t) => t.stop()); setLocalStream(null); }
+    stopMedia();
     cleanupPeer();
     setChatMessages([]);
     setChatOpen(false);
     socketRef.current?.emit("next-partner");
-  }, [cleanupPeer, localStream]);
+  }, [cleanupPeer, stopMedia]);
 
   const stopCall = useCallback(() => {
-    if (localStream) { localStream.getTracks().forEach((t) => t.stop()); setLocalStream(null); }
+    stopMedia();
     cleanupPeer();
     socketRef.current?.emit("next-partner");
     setChatMessages([]);
     setChatOpen(false);
     setPhase("lobby");
-  }, [cleanupPeer, localStream]);
+  }, [cleanupPeer, stopMedia]);
 
   const toggleMic = () => {
     if (localStream) {
@@ -210,7 +221,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (localVideoRef.current && localStream) localVideoRef.current.srcObject = localStream;
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream || streamRef.current;
+    }
   }, [localStream]);
 
   if (phase === "waiting") return <Waiting onCancel={() => { stopCall(); setPhase("lobby"); }} />;
