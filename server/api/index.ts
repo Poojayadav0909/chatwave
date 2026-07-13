@@ -8,8 +8,12 @@ const PORT = process.env.PORT || 3001;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 
 const app = express();
-app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
+app.use(cors({ origin: CORS_ORIGIN === "*" ? "*" : CORS_ORIGIN, credentials: CORS_ORIGIN !== "*" }));
 app.use(express.json());
+
+app.get("/", (_req, res) => {
+  res.json({ app: "ChatWave", status: "running" });
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -17,7 +21,7 @@ app.get("/api/health", (_req, res) => {
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: CORS_ORIGIN, credentials: true },
+  cors: { origin: CORS_ORIGIN === "*" ? "*" : CORS_ORIGIN, credentials: CORS_ORIGIN !== "*" },
 });
 
 const waitingQueue = [];
