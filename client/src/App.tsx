@@ -12,6 +12,20 @@ function Lobby({ onStart }: { onStart: () => void }) {
         <h1>ChatWave</h1>
       </div>
       <p className="subtitle">Meet new people. One video at a time.</p>
+      <div className="features">
+        <div className="feature">
+          <div className="feature-icon">&#128247;</div>
+          <span>Video</span>
+        </div>
+        <div className="feature">
+          <div className="feature-icon">&#128172;</div>
+          <span>Chat</span>
+        </div>
+        <div className="feature">
+          <div className="feature-icon">&#128260;</div>
+          <span>Private</span>
+        </div>
+      </div>
       <button className="start-btn" onClick={onStart}>Start Chatting</button>
       <p className="hint">Click to find a random stranger</p>
     </div>
@@ -65,7 +79,7 @@ function Chat({ messages, onSend }: { messages: any[]; onSend: (text: string) =>
 
   return (
     <div className="chat-panel">
-      <div className="chat-header">Chat</div>
+      <div className="chat-header">&#128172; Chat</div>
       <div className="chat-messages">
         {messages.length === 0 && <p className="chat-empty">Say hello!</p>}
         {messages.map((msg) => (
@@ -154,6 +168,7 @@ export default function App() {
     cleanupPeer();
     if (localStream) { localStream.getTracks().forEach((t) => t.stop()); setLocalStream(null); }
     setChatMessages([]);
+    setChatOpen(false);
     socketRef.current?.emit("find-partner");
     setPhase("waiting");
   }, [cleanupPeer, localStream]);
@@ -162,6 +177,7 @@ export default function App() {
     if (localStream) { localStream.getTracks().forEach((t) => t.stop()); setLocalStream(null); }
     cleanupPeer();
     setChatMessages([]);
+    setChatOpen(false);
     socketRef.current?.emit("next-partner");
   }, [cleanupPeer, localStream]);
 
@@ -170,6 +186,7 @@ export default function App() {
     cleanupPeer();
     socketRef.current?.emit("next-partner");
     setChatMessages([]);
+    setChatOpen(false);
     setPhase("lobby");
   }, [cleanupPeer, localStream]);
 
@@ -202,22 +219,37 @@ export default function App() {
   if (phase === "call") {
     return (
       <div className="call-screen">
-        <div className="video-grid two-person">
-          <div className="video-wrapper">
-            <video ref={localVideoRef} autoPlay playsInline muted />
-            <span className="video-label">You</span>
-          </div>
+        <div className="video-grid">
           <div className="video-wrapper">
             <video ref={remoteVideoRef} autoPlay playsInline />
             <span className="video-label">Stranger</span>
           </div>
+          <div className="video-wrapper">
+            <video ref={localVideoRef} autoPlay playsInline muted />
+            <span className="video-label">You</span>
+          </div>
         </div>
         <div className="controls">
-          <button className={`control-btn toggle ${micOn ? "" : "off"}`} onClick={toggleMic}>{micOn ? "Mic" : "Muted"}</button>
-          <button className={`control-btn toggle ${cameraOn ? "" : "off"}`} onClick={toggleCamera}>{cameraOn ? "Camera" : "Cam Off"}</button>
-          <button className={`control-btn toggle ${chatOpen ? "active" : ""}`} onClick={() => setChatOpen((o) => !o)}>Chat</button>
-          <button className="control-btn next" onClick={nextPartner}>Next &#8594;</button>
-          <button className="control-btn leave" onClick={stopCall}>Stop</button>
+          <button className={`control-btn toggle ${micOn ? "" : "off"}`} onClick={toggleMic}>
+            {micOn ? "\u{1F3A4}" : "\u{1F507}"}
+            <span className="control-label">{micOn ? "Mic" : "Muted"}</span>
+          </button>
+          <button className={`control-btn toggle ${cameraOn ? "" : "off"}`} onClick={toggleCamera}>
+            {cameraOn ? "\u{1F4F7}" : "\u{1F6AB}"}
+            <span className="control-label">{cameraOn ? "Camera" : "Off"}</span>
+          </button>
+          <button className={`control-btn chat-toggle ${chatOpen ? "active" : ""}`} onClick={() => setChatOpen((o) => !o)}>
+            {"\u{1F4AC}"}
+            <span className="control-label">Chat</span>
+          </button>
+          <button className="control-btn next" onClick={nextPartner}>
+            {"\u23ED"}
+            <span className="control-label">Next</span>
+          </button>
+          <button className="control-btn leave" onClick={stopCall}>
+            {"\u{1F5D1}"}
+            <span className="control-label">Leave</span>
+          </button>
         </div>
         {chatOpen && <Chat messages={chatMessages} onSend={sendChat} />}
       </div>
