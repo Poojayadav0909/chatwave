@@ -171,8 +171,10 @@ export default function App() {
     const s = streamRef.current;
     if (s) { s.getTracks().forEach((t) => t.stop()); streamRef.current = null; }
     setLocalStream(null);
-    if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    requestAnimationFrame(() => {
+      if (localVideoRef.current) localVideoRef.current.srcObject = null;
+      if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    });
   }, []);
 
   const findPartner = useCallback(() => {
@@ -202,15 +204,17 @@ export default function App() {
   }, [cleanupPeer, stopMedia]);
 
   const toggleMic = () => {
-    if (localStream) {
-      const track = localStream.getAudioTracks()[0];
+    const s = streamRef.current || localStream;
+    if (s) {
+      const track = s.getAudioTracks()[0];
       if (track) { track.enabled = !track.enabled; setMicOn(track.enabled); }
     }
   };
 
   const toggleCamera = () => {
-    if (localStream) {
-      const track = localStream.getVideoTracks()[0];
+    const s = streamRef.current || localStream;
+    if (s) {
+      const track = s.getVideoTracks()[0];
       if (track) { track.enabled = !track.enabled; setCameraOn(track.enabled); }
     }
   };
@@ -220,12 +224,6 @@ export default function App() {
     socketRef.current?.emit("chat-message", text);
   };
 
-  useEffect(() => {
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = localStream || streamRef.current;
-    }
-  }, [localStream]);
-
   if (phase === "waiting") return <Waiting onCancel={() => { stopCall(); setPhase("lobby"); }} />;
   if (phase === "partner-left") return <PartnerLeft onFindNew={findPartner} onStop={() => { cleanupPeer(); setPhase("lobby"); }} />;
 
@@ -234,11 +232,11 @@ export default function App() {
       <div className="call-screen">
         <div className="video-grid">
           <div className="video-wrapper">
-            <video ref={remoteVideoRef} autoPlay playsInline />
+            <video ref={(el) => { remoteVideoRef.current = el; }} autoPlay playsInline />
             <span className="video-label">Stranger</span>
           </div>
           <div className="video-wrapper">
-            <video ref={localVideoRef} autoPlay playsInline muted />
+            <video ref={(el) => { localVideoRef.current = el; if (el && streamRef.current) el.srcObject = streamRef.current; }} autoPlay playsInline muted />
             <span className="video-label">You</span>
           </div>
         </div>
