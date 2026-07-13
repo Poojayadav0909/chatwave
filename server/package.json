@@ -1,0 +1,19 @@
+{
+  "name": "chatwave-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx api/index.ts",
+    "start": "node api/index.ts",
+    "build": "echo 'done'"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.0",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

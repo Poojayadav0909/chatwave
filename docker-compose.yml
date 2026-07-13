@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: chatwave
+      POSTGRES_PASSWORD: chatwave
+      POSTGRES_DB: chatwave
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatwave"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: server
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "postgresql://chatwave:chatwave@postgres:5432/chatwave?schema=public"
+      JWT_SECRET: "change-this-in-production-to-a-random-string"
+      JWT_EXPIRES_IN: "7d"
+      PORT: "3001"
+      CORS_ORIGIN: "http://localhost"
+      NODE_ENV: "production"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma db push && node dist/index.js"
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: client
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
